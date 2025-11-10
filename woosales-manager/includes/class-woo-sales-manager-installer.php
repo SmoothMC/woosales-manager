@@ -9,17 +9,18 @@ class Woo_Sales_Manager_Installer {
         $agents = $wpdb->prefix . 'wsm_agents';
         $comms  = $wpdb->prefix . 'wsm_commissions';
 
-        $sql_agents = "CREATE TABLE $agents (
-            id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-            name VARCHAR(191) NOT NULL,
-            email VARCHAR(191) DEFAULT '' NOT NULL,
-            rate DECIMAL(7,4) NOT NULL DEFAULT 0.0000,
-            is_active TINYINT(1) NOT NULL DEFAULT 1,
-            created_at DATETIME NOT NULL,
-            updated_at DATETIME NOT NULL,
-            PRIMARY KEY (id),
-            KEY is_active (is_active)
-        ) $charset;";
+				$sql_agents = "CREATE TABLE $agents (
+    			id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    			name VARCHAR(191) NOT NULL,
+    			email VARCHAR(191),
+    			rate DECIMAL(6,4) NOT NULL DEFAULT 0,
+    			is_active TINYINT(1) NOT NULL DEFAULT 1,
+    			user_id BIGINT UNSIGNED NULL,
+    			created_at DATETIME NOT NULL,
+    			updated_at DATETIME NOT NULL,
+    			PRIMARY KEY (id),
+    			KEY user_idx (user_id)
+				) {$charset};";
 
         $sql_commissions = "CREATE TABLE $comms (
             id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -60,4 +61,15 @@ class Woo_Sales_Manager_Installer {
             'updated_at' => current_time('mysql'),
         ));
     }
+
+		public static function upgrade() {
+    global $wpdb;
+    $table = $wpdb->prefix . 'wsm_agents';
+
+    $has_user_id = $wpdb->get_var("SHOW COLUMNS FROM $table LIKE 'user_id'");
+    if (!$has_user_id) {
+        $wpdb->query("ALTER TABLE $table ADD COLUMN user_id BIGINT UNSIGNED NULL AFTER is_active;");
+        $wpdb->query("ALTER TABLE $table ADD INDEX user_idx (user_id);");
+    }
+}
 }

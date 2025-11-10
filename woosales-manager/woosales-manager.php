@@ -47,3 +47,7 @@ add_action('plugins_loaded', function(){
 
     }
 });
+
+add_action('plugins_loaded', function(){
+    Woo_Sales_Manager_Installer::upgrade();
+});
