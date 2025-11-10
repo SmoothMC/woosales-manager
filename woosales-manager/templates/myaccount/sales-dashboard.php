@@ -13,7 +13,6 @@
     text-align: left;
     border-bottom: 1px solid #222;
     padding-bottom: 8px;
-    color: #00D6B9;
 }
 .wsm-sales-wrap td {
     padding: 8px 0;
