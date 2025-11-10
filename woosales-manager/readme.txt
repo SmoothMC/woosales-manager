@@ -2,7 +2,7 @@
 Contributors: SmoothMC
 Tags: woocommerce, commission, sales, agents
 Requires at least: 6.0
-Tested up to: 6.7
+Tested up to: 6.8.3
 Requires PHP: 8.0
 Stable tag: 1.0.1
 License: GPLv2 or later
@@ -21,5 +21,7 @@ Upload ZIP, activate, then WooCommerce → Sales.
 Set **Update JSON URL** under Settings.
 
 == Changelog ==
-= 1.0.1 =
+= 1.0.2 =
 * Added self-updater compatible with JSON feed (like wp-notification-settings).
+= 1.0.1 =
+* Initial release
