@@ -51,9 +51,9 @@ $agents = $this->agents->all_active();
                 <td><?php echo esc_html($r->id); ?></td>
                 <td><a href="<?php echo esc_url(get_edit_post_link($r->order_id)); ?>">#<?php echo esc_html($r->order_id); ?></a></td>
                 <td><?php echo esc_html($agent ? $agent->name : ('#'.$r->agent_id)); ?></td>
-                <td><?php echo esc_html( wc_price( $r->taxable_base ) ); ?></td>
+                <td><?php echo wc_price( $r->taxable_base ); ?></td>
                 <td><?php echo esc_html( ($r->rate*100) . '%' ); ?></td>
-                <td><?php echo esc_html( wc_price( $r->amount ) ); ?></td>
+                <td><?php echo wc_price( $r->amount ); ?></td>
                 <td><?php echo esc_html( ucfirst($r->status) ); ?></td>
                 <td><?php echo esc_html( $r->created_at ); ?></td>
             </tr>

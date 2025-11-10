@@ -30,7 +30,7 @@ class Woo_Sales_Manager_UI {
         add_action('init', array($this,'add_account_endpoint'));
         add_filter('query_vars', array($this,'add_query_var'));
         add_filter('woocommerce_account_menu_items', array($this,'add_my_account_menu_item'));
-        add_action('woocommerce_account_wsm-sales_endpoint', array($this,'render_my_account_sales'));
+        add_action('woocommerce_account_my-sales_endpoint', array($this,'render_my_account_sales'));
     }
 
     public function assets(){}
@@ -82,23 +82,22 @@ class Woo_Sales_Manager_UI {
      * -------------------------------------------------------- */
 
     public function add_account_endpoint(){
-        add_rewrite_endpoint('wsm-sales', EP_ROOT | EP_PAGES);
+        add_rewrite_endpoint('my-sales', EP_ROOT | EP_PAGES);
     }
 
     public function add_query_var($vars){
-        $vars[] = 'wsm-sales';
+        $vars[] = 'my-sales';
         return $vars;
     }
 
     public function add_my_account_menu_item($items){
         $agent = $this->agents->get_by_user(get_current_user_id());
         if ($agent) {
-            // Insert after Dashboard
             $new = [];
             foreach($items as $key => $label){
                 $new[$key] = $label;
                 if($key === 'dashboard'){
-                    $new['wsm-sales'] = __('My Sales','woo-sales-manager');
+                    $new['my-sales'] = __('My Sales','woo-sales-manager');
                 }
             }
             return $new;
@@ -115,7 +114,6 @@ class Woo_Sales_Manager_UI {
             return;
         }
 
-        // Get commission rows for this agent:
         $items = $this->commissions->by_agent($agent->id);
 
         wc_get_template(

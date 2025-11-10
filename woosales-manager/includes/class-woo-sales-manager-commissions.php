@@ -68,4 +68,27 @@ class Woo_Sales_Manager_Commissions {
         if($a['date_to']){ $where.=" AND created_at <= %s"; $p[]=$a['date_to']; }
         return (float)$wpdb->get_var( $wpdb->prepare("SELECT SUM(amount) FROM {$this->db->table_commissions} $where", $p) );
     }
+		public function by_agent($agent_id){
+    	global $wpdb;
+
+    	return $wpdb->get_results($wpdb->prepare("
+        SELECT 
+          c.id,
+          c.order_id,
+          c.agent_id,
+          c.order_total,
+          c.taxable_base,
+          c.rate,
+          c.amount,
+          c.status,
+          c.currency,
+          c.created_at,
+          o.post_status AS wc_status,
+          o.post_date AS order_date
+        FROM {$this->db->table_commissions} c
+        LEFT JOIN {$wpdb->posts} o ON c.order_id = o.ID
+        WHERE c.agent_id = %d
+        ORDER BY c.id DESC
+  		", $agent_id));
+		}
 }

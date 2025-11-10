@@ -2,10 +2,8 @@
 
 <style>
 .wsm-sales-wrap {
-    background: #111;
     padding: 24px;
     border-radius: 8px;
-    color: #eee;
 }
 .wsm-sales-wrap table {
     width: 100%;
@@ -56,9 +54,9 @@
             <tr>
                 <td><a href="<?php echo esc_url( wc_get_endpoint_url('view-order', $row->order_id, wc_get_page_permalink('myaccount')) ); ?>">
                     #<?php echo esc_html($row->order_id); ?></a></td>
-                <td><?php echo wc_price($row->base_amount); ?></td>
+                <td><?php echo wc_price($row->taxable_base); ?></td>
                 <td><?php echo wc_price($row->amount); ?></td>
-                <td><?php echo esc_html(ucfirst($row->status)); ?></td>
+                <td><?php echo ucfirst(esc_html($row->status)); ?></td>
             </tr>
         <?php endforeach; ?>
         </tbody>
