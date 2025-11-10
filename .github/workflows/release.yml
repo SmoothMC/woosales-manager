@@ -1,0 +1,108 @@
+name: Build, Changelog & Deploy
+
+on:
+  push:
+    tags:
+      - "*"
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Get Tag Version
+        id: version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq
+
+      - name: Install git-cliff
+        run: |
+          LATEST=$(curl -s https://api.github.com/repos/orhun/git-cliff/releases/latest | jq -r '.tag_name')
+          ASSET_URL=$(curl -s https://api.github.com/repos/orhun/git-cliff/releases/latest \
+            | jq -r '.assets[] | select(.name | test("x86_64-unknown-linux-gnu.*\\.tar\\.gz$")) | .browser_download_url')
+          wget "$ASSET_URL" -O cliff.tar.gz
+          mkdir cliff
+          tar -xzf cliff.tar.gz -C cliff --strip-components=1
+          sudo mv cliff/git-cliff /usr/local/bin/git-cliff
+          git-cliff --version
+
+      - name: Generate Changelog
+        id: changelog
+        run: |
+          git cliff --tag "${{ steps.version.outputs.VERSION }}" > CHANGELOG.tmp
+          echo "changelog<<EOF" >> $GITHUB_OUTPUT
+          cat CHANGELOG.tmp >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Update Plugin Version in main file
+        run: |
+          sed -i "s/^.*Version: .*/ * Version: ${{ steps.version.outputs.VERSION }}/" woosales-manager/woosales-manager.php
+          sed -i "s/define( 'WSM_VERSION'.*/define( 'WSM_VERSION', '${{ steps.version.outputs.VERSION }}' );/" woosales-manager/woosales-manager.php
+
+      - name: Update update.json (version, download_url, changelog, last_updated)
+        run: |
+          DATE=$(date +%Y-%m-%d)
+          VERSION=${{ steps.version.outputs.VERSION }}
+          CHANGELOG=$(echo "${{ steps.changelog.outputs.changelog }}" | sed 's/"/\\"/g')
+          jq --arg VERSION "$VERSION" --arg DATE "$DATE" --arg CHANGELOG "$CHANGELOG" \
+            '.version = $VERSION
+            | .download_url = "https://cdn.zzzooo.studio/wp-plugins/woosales-manager/woosales-manager-\($VERSION).zip"
+            | .last_updated = $DATE
+            | .changelog = $CHANGELOG' \
+            update.json > update.tmp && mv update.tmp update.json
+
+      - name: Create ZIP
+        run: |
+          mkdir build
+          zip -r build/woosales-manager-${{ steps.version.outputs.VERSION }}.zip woosales-manager/ -x "*.git*" -x "*.github*"
+
+      - name: Upload ZIP to Server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SFTP_HOST }}
+          username: ${{ secrets.SFTP_USER }}
+          key: ${{ secrets.SFTP_KEY }}
+          source: "build/woosales-manager-${{ steps.version.outputs.VERSION }}.zip"
+          target: "/www/htdocs/w019142c/02_live/cdn.zzzooo.studio/wp-plugins/woosales-manager/"
+          strip_components: 1
+          overwrite: true
+          tar: false
+
+      - name: Upload update.json to Server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SFTP_HOST }}
+          username: ${{ secrets.SFTP_USER }}
+          key: ${{ secrets.SFTP_KEY }}
+          source: "update.json"
+          target: "/www/htdocs/w019142c/02_live/cdn.zzzooo.studio/wp-plugins/woosales-manager/"
+          overwrite: true
+
+      - name: Commit modified metadata back into repo
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin ${{ github.event.repository.default_branch }}
+          git checkout ${{ github.event.repository.default_branch }}
+          git merge --no-edit $GITHUB_SHA || true
+          git add update.json woosales-manager/woosales-manager.php
+          git commit -m "Release ${{ steps.version.outputs.VERSION }}" || echo "No changes to commit"
+          git push origin ${{ github.event.repository.default_branch }}
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.version.outputs.VERSION }}
+          name: "Release ${{ steps.version.outputs.VERSION }}"
+          body: ${{ steps.changelog.outputs.changelog }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

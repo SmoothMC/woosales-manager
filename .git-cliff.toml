@@ -1,0 +1,37 @@
+# git-cliff configuration
+# https://github.com/orhun/git-cliff
+
+[changelog]
+header = """
+# Changelog
+"""
+body = """
+{% for group, commits in commits | group_by(attribute="group") %}
+### {{ group | upper }}
+
+{% for commit in commits %}
+- {{ commit.message | trim }} ({{ commit.id | truncate(length=7) }})
+{% endfor %}
+
+{% endfor %}
+"""
+footer = ""
+
+# Which commits should be included
+[git]
+conventional_commits = true
+filter_unconventional = true
+commit_parsers = [
+    { message = "^feat", group = "Features" },
+    { message = "^fix", group = "Fixes" },
+    { message = "^refactor", group = "Refactor" },
+    { message = "^perf", group = "Performance" },
+    { message = "^style", group = "Styling" },
+    { message = "^docs", group = "Docs" },
+    { message = "^test", group = "Tests" },
+    { message = "^chore", group = "Chore" }
+]
+
+# Defines how tags are treated
+[git.tagging]
+tag_prefix = ""
