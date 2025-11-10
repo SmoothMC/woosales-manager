@@ -47,5 +47,22 @@ The plugin integrates seamlessly into WooCommerce and does not require referral 
 
 WooSales Manager uses a JSON-based updater compatible with custom CDN deployments.
 
-The update metadata is retrieved from:
+The update metadata is retrieved from: https://cdn.zzzooo.studio
 
+---
+
+| Feature                                        | Status         |
+| ---------------------------------------------- | -------------- |
+| Order-level agent assignment UI                | ✅ Done         |
+| Multiple agents per order                      | ✅ Configurable |
+| Agent dashboard                                | 🔧 In progress |
+| Payout batch export                            | 🟡 Planned     |
+| Analytics (conversion view, totals per period) | 🟡 Planned     |
+
+
+---
+
+### Author
+
+Created and maintained by Mikkka | zzzooo Studio
+https://zzzooo.studio/
