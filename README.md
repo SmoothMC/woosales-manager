@@ -53,9 +53,9 @@ The update metadata is retrieved from: https://cdn.zzzooo.studio
 
 | Feature                                        | Status         |
 | ---------------------------------------------- | -------------- |
-| Order-level agent assignment UI                | ✅ Done         |
-| Multiple agents per order                      | ✅ Configurable |
-| Agent dashboard                                | 🔧 In progress |
+| Order-level agent assignment UI                | ✅ Done        |
+| Multiple agents per order                      | ✅ Configurable|
+| Agent dashboard                                | ✅ Done        |
 | Payout batch export                            | 🟡 Planned     |
 | Analytics (conversion view, totals per period) | 🟡 Planned     |
 
