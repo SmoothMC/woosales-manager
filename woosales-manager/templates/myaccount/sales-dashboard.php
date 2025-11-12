@@ -2,6 +2,9 @@
 
 <style>
 .wsm-sales-wrap { padding: 24px; border-radius: 8px; }
+@media (width <= 768px) {
+  .wsm-sales-wrap { padding: 0 }  attributes
+}
 .wsm-sales-wrap table { width: 100%; border-collapse: collapse; }
 .wsm-sales-wrap th { text-align: left; border-bottom: 1px solid #222; padding-bottom: 8px; }
 .wsm-sales-wrap td { padding: 8px 0; border-bottom: 1px solid #1b1b1b; }
