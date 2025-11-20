@@ -21,6 +21,17 @@ Upload ZIP, activate, then WooCommerce → Sales.
 Set **Update JSON URL** under Settings.
 
 == Changelog ==
+## [1.2.1] – 2025-11-12
+### Fixed
+- Commissions are now correctly created with status `pending` when order moves to **processing**
+- Commission auto-approval is triggered only once order is **completed**
+- Pending commissions now visible in admin dashboard and agent frontend
+- Status normalization added to handle WooCommerce variants (`pending_payment`, etc.)
+- Improved reject logic for refunded/canceled orders
+
+### Notes
+This patch resolves the issue where pending commissions were never recorded, causing them not to appear in reporting or filtering.
+
 ## [1.2.0] – 2025-11-12
 ### Added
 - New **period filter** (All, This Month, This Quarter, This Year) in *My Account → My Sales*
