@@ -17,9 +17,13 @@ if (!$row) {
     return;
 }
 
-$agents = $this->agents->all_active();
+$agents   = $this->agents->all_active();
 $statuses = ['pending','approved','rejected','paid'];
+
+// Rate für Anzeige von Dezimal → Prozent
+$rate_percent = round($row->rate * 100, 4);
 ?>
+
 <div class="wrap">
 
 <h1>
@@ -72,20 +76,27 @@ $statuses = ['pending','approved','rejected','paid'];
 </tr>
 
 <tr>
-    <th><?php _e('Rate','woo-sales-manager'); ?></th>
+    <th><?php _e('Rate (%)','woo-sales-manager'); ?></th>
     <td>
-        <input type="number" step="0.0001"
-            name="rate"
-            value="<?php echo esc_attr($row->rate); ?>">
+        <input type="number"
+          step="0.1"
+          min="0"
+          max="100"
+          name="rate"
+          value="<?php echo esc_attr($row->rate * 100); ?>">
+        <p class="description">
+            <?php _e('Enter percentage (e.g. 3 for 3%). Amount is recalculated automatically.','woo-sales-manager'); ?>
+        </p>
     </td>
 </tr>
 
 <tr>
     <th><?php _e('Amount','woo-sales-manager'); ?></th>
     <td>
-        <input type="number" step="0.01"
-            name="amount"
-            value="<?php echo esc_attr($row->amount); ?>">
+        <strong id="wsm-preview-amount"></strong>
+        <p class="description">
+            <?php _e('Calculated automatically from base × rate.','woo-sales-manager'); ?>
+        </p>
     </td>
 </tr>
 
@@ -102,4 +113,27 @@ $statuses = ['pending','approved','rejected','paid'];
 </p>
 
 </form>
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+
+    const rateInput = document.querySelector('[name="rate"]');
+    const preview   = document.getElementById('wsm-preview-amount');
+
+    if(!rateInput || !preview) return;
+
+    const base = <?php echo json_encode((float) $row->taxable_base); ?>;
+
+    function recalc() {
+        const ratePercent = parseFloat(rateInput.value.replace(',', '.')) || 0;
+        const amount = (base * (ratePercent / 100)).toFixed(2);
+        preview.innerText = amount.replace('.', ',') + ' €';
+    }
+
+    rateInput.addEventListener('input', recalc);
+
+    // Beim ersten Laden einmal rechnen
+    recalc();
+
+});
+</script>
 </div>

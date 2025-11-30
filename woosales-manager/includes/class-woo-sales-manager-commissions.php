@@ -193,10 +193,11 @@ class Woo_Sales_Manager_Commissions {
     }
 
     public function handle_update(){
-        if(
-            !current_user_can('manage_woocommerce') ||
-            !check_admin_referer('wsm_update_commission')
-        ){
+    
+        if (
+            ! current_user_can('manage_woocommerce') ||
+            ! check_admin_referer('wsm_update_commission')
+        ) {
             wp_die('Not allowed');
         }
     
@@ -204,13 +205,35 @@ class Woo_Sales_Manager_Commissions {
     
         $id = absint($_POST['id']);
     
+        // Aktuellen Datensatz laden
+        $row = $wpdb->get_row(
+            $wpdb->prepare(
+                "SELECT taxable_base FROM {$this->db->table_commissions} WHERE id=%d",
+                $id
+            )
+        );
+    
+        if (! $row) {
+            wp_die('Commission not found');
+        }
+    
+        // ✅ Prozent → Dezimal
+        $rate_percent = floatval($_POST['rate']);
+        $rate = $rate_percent / 100;
+    
+        // ✅ Amount neu berechnen
+        $amount = round(
+            floatval($row->taxable_base) * $rate,
+            wc_get_price_decimals()
+        );
+    
         $wpdb->update(
             $this->db->table_commissions,
             array(
-                'agent_id'  => absint($_POST['agent_id']),
-                'status'    => sanitize_text_field($_POST['status']),
-                'rate'     => floatval($_POST['rate']),
-                'amount'    => floatval($_POST['amount']),
+                'agent_id'   => absint($_POST['agent_id']),
+                'status'     => sanitize_text_field($_POST['status']),
+                'rate'       => $rate,
+                'amount'     => $amount,
                 'updated_at'=> current_time('mysql'),
             ),
             array(
