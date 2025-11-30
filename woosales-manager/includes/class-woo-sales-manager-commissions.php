@@ -244,5 +244,52 @@ class Woo_Sales_Manager_Commissions {
         wp_redirect(admin_url('admin.php?page=wsm-sales&updated=1'));
         exit;
     }
+
+    public function create_for_manual_assignment($order_id, array $agent_ids){
+    
+        $order = wc_get_order($order_id);
+        if(!$order) return;
+    
+        global $wpdb;
+    
+        // ✅ 1. Alte Zuordnungen komplett entfernen
+        $wpdb->delete(
+            $this->db->table_commissions,
+            [ 'order_id' => $order_id ]
+        );
+    
+        // Falls alles abgewählt wurde → fertig
+        if ( empty($agent_ids) ) return;
+    
+        // ✅ 2. Werte vorbereiten
+        $currency = $order->get_currency();
+        $base     = $this->order_base_amount($order);
+        $total    = (float)$order->get_total();
+    
+        // ✅ 3. Neue Commission-Einträge bauen
+        foreach($agent_ids as $agent_id){
+    
+            $a = $this->agents->get($agent_id);
+            if(!$a) continue;
+    
+            $amount = round($base * $a->rate, wc_get_price_decimals());
+    
+            $wpdb->insert(
+                $this->db->table_commissions,
+                array(
+                    'order_id'     => $order_id,
+                    'agent_id'     => $a->id,
+                    'order_total' => $total,
+                    'taxable_base'=> $base,
+                    'rate'         => $a->rate,
+                    'amount'       => $amount,
+                    'status'       => 'pending',
+                    'currency'     => $currency,
+                    'created_at'  => current_time('mysql'),
+                    'updated_at'  => current_time('mysql'),
+                )
+            );
+        }
+    }
 }
 ?>
