@@ -21,6 +21,18 @@ Upload ZIP, activate, then WooCommerce → Sales.
 Set **Update JSON URL** under Settings.
 
 == Changelog ==
+## [1.3.2] – 2025-11-30
+
+### Fixed
+- Orders with already assigned agents now correctly sync checkbox state
+- Pending commissions are now generated reliably on manual assignment
+- Reassignment now removes outdated commissions before recreating new ones
+- Correct rate handling in admin edit screen (percent ↔ decimal conversion)
+
+### Added
+- Manual agent assignment workflow for existing orders
+- Commission recalculation stability on reassignment & status changes
+
 ## [1.3.1] – 2025-11-30
 ### Fixed
 - Edit rate as percentage (UI fix)
@@ -28,12 +40,14 @@ Set **Update JSON URL** under Settings.
 ### Added
 - Add live JS preview for recalculated commission
 - Recalculate commission amount on save
+
 ## [1.3.0] – 2025-11-30
 ### Added
 - Admin single-commission edit screen
 - Manual reassignment of commissions to agents
 - Status, rate and amount can be corrected post-creation
 - Secure save handling via admin-post endpoint
+
 ## [1.2.1] – 2025-11-12
 ### Fixed
 - Commissions are now correctly created with status `pending` when order moves to **processing**
