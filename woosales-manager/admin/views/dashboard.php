@@ -48,7 +48,13 @@ $agents = $this->agents->all_active();
     <tbody>
         <?php foreach($list['rows'] as $r): $agent = $this->agents->get($r->agent_id); ?>
             <tr>
-                <td><?php echo esc_html($r->id); ?></td>
+                <td>
+                  <a href="<?php echo esc_url(
+                      admin_url('admin.php?page=wsm-sales&commission_id=' . $r->id)
+                  ); ?>">
+                      #<?php echo esc_html($r->id); ?>
+                  </a>
+                </td>
                 <td><a href="<?php echo esc_url(get_edit_post_link($r->order_id)); ?>">#<?php echo esc_html($r->order_id); ?></a></td>
                 <td><?php echo esc_html($agent ? $agent->name : ('#'.$r->agent_id)); ?></td>
                 <td><?php echo wc_price( $r->taxable_base ); ?></td>

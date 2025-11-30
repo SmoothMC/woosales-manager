@@ -49,6 +49,14 @@ class Woo_Sales_Manager_UI {
     }
 
     public function render_page(){
+    
+        // ✅ Einzel-Commission öffnen
+        if ( isset($_GET['commission_id']) && absint($_GET['commission_id']) ) {
+            $commission_id = absint($_GET['commission_id']);
+            include WSM_PATH . 'admin/views/edit-commission.php';
+            return;
+        }
+        
         $tab = sanitize_key($_GET['tab'] ?? 'dashboard');
 
         echo '<div class="wrap"><h1>'.esc_html__('WooSales Manager','woo-sales-manager').'</h1>';

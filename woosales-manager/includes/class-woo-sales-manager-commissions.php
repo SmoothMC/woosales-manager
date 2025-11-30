@@ -20,6 +20,9 @@ class Woo_Sales_Manager_Commissions {
         // Reject when cancelled or refunded
         add_action('woocommerce_order_status_cancelled', array($this, 'reject_for_order'));
         add_action('woocommerce_order_refunded', array($this, 'reject_for_order'));
+        
+        // Edit commissions
+        add_action('admin_post_wsm_update_commission', [$this,'handle_update']);
     }
 
     private function settings(){
@@ -168,25 +171,55 @@ class Woo_Sales_Manager_Commissions {
 
         return $wpdb->get_results(
             $wpdb->prepare("
-		        SELECT 
-		            c.id,
-		            c.order_id,
-		            c.agent_id,
-		            c.order_total,
-		            c.taxable_base,
-		            c.rate,
-		            c.amount,
-		            c.status,
-		            c.currency,
-		            c.created_at,
-		            o.post_status AS wc_status,
-		            o.post_date AS order_date
-		        FROM {$this->db->table_commissions} c
-		        LEFT JOIN {$wpdb->posts} o ON c.order_id = o.ID
-		        WHERE c.agent_id = %d
-		        ORDER BY c.id DESC
-		    ", $agent_id)
+                SELECT 
+                    c.id,
+                    c.order_id,
+                    c.agent_id,
+                    c.order_total,
+                    c.taxable_base,
+                    c.rate,
+                    c.amount,
+                    c.status,
+                    c.currency,
+                    c.created_at,
+                    o.post_status AS wc_status,
+                    o.post_date AS order_date
+                FROM {$this->db->table_commissions} c
+                LEFT JOIN {$wpdb->posts} o ON c.order_id = o.ID
+                WHERE c.agent_id = %d
+                ORDER BY c.id DESC
+            ", $agent_id)
         );
+    }
+
+    public function handle_update(){
+        if(
+            !current_user_can('manage_woocommerce') ||
+            !check_admin_referer('wsm_update_commission')
+        ){
+            wp_die('Not allowed');
+        }
+    
+        global $wpdb;
+    
+        $id = absint($_POST['id']);
+    
+        $wpdb->update(
+            $this->db->table_commissions,
+            array(
+                'agent_id'  => absint($_POST['agent_id']),
+                'status'    => sanitize_text_field($_POST['status']),
+                'rate'     => floatval($_POST['rate']),
+                'amount'    => floatval($_POST['amount']),
+                'updated_at'=> current_time('mysql'),
+            ),
+            array(
+                'id' => $id
+            )
+        );
+    
+        wp_redirect(admin_url('admin.php?page=wsm-sales&updated=1'));
+        exit;
     }
 }
 ?>
