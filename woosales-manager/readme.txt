@@ -21,6 +21,13 @@ Upload ZIP, activate, then WooCommerce → Sales.
 Set **Update JSON URL** under Settings.
 
 == Changelog ==
+## [1.3.1] – 2025-11-30
+### Fixed
+- Edit rate as percentage (UI fix)
+- Remove manual amount editing
+### Added
+- Add live JS preview for recalculated commission
+- Recalculate commission amount on save
 ## [1.3.0] – 2025-11-30
 ### Added
 - Admin single-commission edit screen
