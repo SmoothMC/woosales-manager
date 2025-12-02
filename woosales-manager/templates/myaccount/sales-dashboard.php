@@ -30,7 +30,7 @@
   <?php
   // ---- INPUT ----
   $period = isset($_GET['period']) ? sanitize_text_field($_GET['period']) : 'month'; // default: This Month
-	$offset = isset($_GET['period_offset']) ? intval($_GET['period_offset']) : 0;
+  $offset = isset($_GET['period_offset']) ? intval($_GET['period_offset']) : 0;
   $status_param = isset($_GET['status']) ? sanitize_text_field($_GET['status']) : 'approved'; // csv
   $status_filter = array_filter(array_map('strtolower', array_map('trim', explode(',', $status_param))));
   if (empty($status_filter)) { $status_filter = array('approved'); }
@@ -40,10 +40,10 @@
   // ---- FILTERING ----
   $filtered = array();
   $now = current_time('timestamp');
-	$ref = strtotime("$offset month", $now); // Standard-Offset in Monaten
-	
+  $ref = strtotime("$offset month", $now); // Standard-Offset in Monaten
+  
   foreach($items as $row){
-    $created = strtotime($row->created_at);
+    $created = strtotime($row->commission_month . '-01');
     $include = true;
 
     // Zeitraumfilter basierend auf Offset-Referenz ($ref)
@@ -112,17 +112,17 @@
     <strong><?php esc_html_e('Total Commission (Filtered):','woo-sales-manager'); ?></strong>
     <?php echo wc_price($total); ?>
   </p>
-	
-	<?php
-		$label = '';
-		switch($period){
-			case 'month':   $label = date_i18n('F Y', $ref); break;
-			case 'quarter': $label = sprintf(__('Q%d %s','woo-sales-manager'),
-												ceil(date('n',$ref)/3), date('Y',$ref)); break;
-			case 'year':    $label = date('Y',$ref); break;
-		}
-		if ($label) echo '<p style="margin-top:8px;font-weight:600;">'.esc_html($label).'</p>';
-	?>
+  
+  <?php
+    $label = '';
+    switch($period){
+      case 'month':   $label = date_i18n('F Y', $ref); break;
+      case 'quarter': $label = sprintf(__('Q%d %s','woo-sales-manager'),
+                        ceil(date('n',$ref)/3), date('Y',$ref)); break;
+      case 'year':    $label = date('Y',$ref); break;
+    }
+    if ($label) echo '<p style="margin-top:8px;font-weight:600;">'.esc_html($label).'</p>';
+  ?>
 
 
   <table>
@@ -131,6 +131,7 @@
         <th><?php esc_html_e('Order','woo-sales-manager'); ?></th>
         <th><?php esc_html_e('Net Amount','woo-sales-manager'); ?></th>
         <th><?php esc_html_e('Commission','woo-sales-manager'); ?></th>
+        <th><?php esc_html_e('Month','woo-sales-manager'); ?></th>
         <th><?php esc_html_e('Status','woo-sales-manager'); ?></th>
       </tr>
     </thead>
@@ -147,13 +148,14 @@
           </td>
           <td><?php echo wc_price($row->taxable_base); ?></td>
           <td><?php echo wc_price($row->amount); ?></td>
+          <td><?php echo esc_html($row->commission_month); ?></td>
           <td><?php echo ucfirst(esc_html($row->status)); ?></td>
         </tr>
       <?php endforeach; ?>
     <?php endif; ?>
     </tbody>
   </table>
-	<?php if (in_array($period, ['month','quarter','year'], true)) : ?>
+  <?php if (in_array($period, ['month','quarter','year'], true)) : ?>
   <div class="wsm-period-nav" style="margin-top:16px;display:flex;justify-content:center;gap:16px;">
     <?php
       $prev = $offset - 1;
@@ -170,10 +172,10 @@ $prev_url = add_query_arg('period_offset', $prev, $base_url);
 $next_url = add_query_arg('period_offset', $next, $base_url);
 
 // "Next" deaktivieren, wenn in Zukunft
-$next_disabled = ($ref > $now);
+$next_disabled = (date('Y-m', $ref) >= date('Y-m'));
     ?>
     <a type="button" class="button wsm-nav-btn" href="<?php echo esc_url($prev_url); ?>"><?php esc_html_e('Previous','woo-sales-manager'); ?></a>
-		<a class="button button wsm-nav-btn <?php echo $next_disabled ? 'disabled' : ''; ?>"
+    <a class="button button wsm-nav-btn <?php echo $next_disabled ? 'disabled' : ''; ?>"
    href="<?php echo esc_url($next_url); ?>"
    <?php echo $next_disabled ? 'style="opacity:0.5;pointer-events:none;"' : ''; ?>>
    <?php esc_html_e('Next','woo-sales-manager'); ?></a>

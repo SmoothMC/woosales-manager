@@ -133,6 +133,10 @@ class Woo_Sales_Manager_UI {
         
         $tab = sanitize_key($_GET['tab'] ?? 'dashboard');
 
+        $month = sanitize_text_field(
+            $_GET['month'] ?? date('Y-m')
+        );
+
         echo '<div class="wrap"><h1>'.esc_html__('WooSales Manager','woo-sales-manager').'</h1>';
         echo '<h2 class="nav-tab-wrapper">';
         $tabs = array(

@@ -23,6 +23,9 @@ class Woo_Sales_Manager_Commissions {
         
         // Edit commissions
         add_action('admin_post_wsm_update_commission', [$this,'handle_update']);
+        
+        // ✅ Run migration once
+        add_action('init', [$this, 'migrate_commission_months'], 5);
     }
 
     private function settings(){
@@ -37,6 +40,34 @@ class Woo_Sales_Manager_Commissions {
             return (float) $order->get_total();
         }
         return (float)$order->get_total() - (float)$order->get_total_tax();
+    }
+
+    /**
+     * Get commission billing month (YYYY-MM)
+     * Uses completed date, fallback to created date
+     */
+    private function get_commission_month( WC_Order $order ) {
+    
+        $date = $order->get_date_completed();
+    
+        if ( ! $date ) {
+            $date = $order->get_date_created();
+        }
+    
+        return $date
+            ? $date->format('Y-m')
+            : current_time('Y-m');
+    }
+
+    public function get_available_months(){
+    
+        global $wpdb;
+    
+        return $wpdb->get_col(
+            "SELECT DISTINCT commission_month
+             FROM {$this->db->table_commissions}
+             ORDER BY commission_month DESC"
+        );
     }
 
     /**
@@ -98,6 +129,7 @@ class Woo_Sales_Manager_Commissions {
                     'amount' => $amount,
                     'status' => 'pending',
                     'currency' => $currency,
+                    'commission_month' => $this->get_commission_month($order),
                     'created_at' => current_time('mysql'),
                     'updated_at' => current_time('mysql')
                 )
@@ -137,12 +169,22 @@ class Woo_Sales_Manager_Commissions {
 
     public function list( $args = array() ){
         global $wpdb;
-        $a = wp_parse_args($args, array('agent_id'=>0,'status'=>'','date_from'=>'','date_to'=>'','paged'=>1,'per_page'=>50));
+        $a = wp_parse_args($args, array('agent_id'=>0,'status'=>'','month'=>'','date_from'=>'','date_to'=>'','paged'=>1,'per_page'=>50));
         $where="WHERE 1=1"; $p=array();
         if($a['agent_id']){ $where.=" AND agent_id=%d"; $p[]=$a['agent_id']; }
         if($a['status']){ $where.=" AND status=%s"; $p[]=$a['status']; }
-        if($a['date_from']){ $where.=" AND created_at >= %s"; $p[]=$a['date_from']; }
-        if($a['date_to']){ $where.=" AND created_at <= %s"; $p[]=$a['date_to']; }
+        if( ! empty($a['month']) ){
+            $where .= " AND commission_month = %s";
+            $p[] = $a['month'];
+        }
+        if($a['date_from']){
+            $p[] = date('Y-m', strtotime($a['date_from']));
+            $where .= " AND commission_month >= %s";
+        }
+        if($a['date_to']){
+            $p[] = date('Y-m', strtotime($a['date_to']));
+            $where .= " AND commission_month <= %s";
+        }
         $offset = (max(1,(int)$a['paged'])-1) * (int)$a['per_page'];
         $sql = "SELECT * FROM {$this->db->table_commissions} $where ORDER BY id DESC LIMIT %d OFFSET %d";
         $rows = $wpdb->get_results( $wpdb->prepare($sql, array_merge($p,[(int)$a['per_page'], (int)$offset])) );
@@ -152,10 +194,14 @@ class Woo_Sales_Manager_Commissions {
 
     public function totals( $args = array() ){
         global $wpdb;
-        $a = wp_parse_args($args, array('agent_id'=>0,'status'=>'approved','date_from'=>'','date_to'=>''));
+        $a = wp_parse_args($args, array('agent_id'=>0,'status'=>'approved','month'=>'','date_from'=>'','date_to'=>''));
         $where="WHERE 1=1"; $p=array();
         if($a['agent_id']){ $where.=" AND agent_id=%d"; $p[]=$a['agent_id']; }
         if($a['status']){ $where.=" AND status=%s"; $p[]=$a['status']; }
+        if( ! empty($a['month']) ){
+            $where .= " AND commission_month = %s";
+            $p[] = $a['month'];
+        }
         if($a['date_from']){ $where.=" AND created_at >= %s"; $p[]=$a['date_from']; }
         if($a['date_to']){ $where.=" AND created_at <= %s"; $p[]=$a['date_to']; }
         return (float)$wpdb->get_var(
@@ -182,6 +228,7 @@ class Woo_Sales_Manager_Commissions {
                     c.status,
                     c.currency,
                     c.created_at,
+                    c.commission_month,
                     o.post_status AS wc_status,
                     o.post_date AS order_date
                 FROM {$this->db->table_commissions} c
@@ -285,8 +332,43 @@ class Woo_Sales_Manager_Commissions {
                     'amount'       => $amount,
                     'status'       => 'pending',
                     'currency'     => $currency,
+                    'commission_month' => $this->get_commission_month($order),
                     'created_at'  => current_time('mysql'),
                     'updated_at'  => current_time('mysql'),
+                )
+            );
+        }
+    }
+
+    /**
+     * Migrate legacy commissions to fill commission_month
+     */
+    public function migrate_commission_months() {
+    
+        global $wpdb;
+    
+        $rows = $wpdb->get_results(
+            "SELECT id, order_id
+             FROM {$this->db->table_commissions}
+             WHERE commission_month = '' OR commission_month IS NULL"
+        );
+    
+        if ( ! $rows ) return;
+    
+        foreach ( $rows as $r ) {
+    
+            $order = wc_get_order($r->order_id);
+            if ( ! $order ) continue;
+    
+            $month = $this->get_commission_month($order);
+    
+            $wpdb->update(
+                $this->db->table_commissions,
+                array(
+                    'commission_month' => $month
+                ),
+                array(
+                    'id' => $r->id
                 )
             );
         }

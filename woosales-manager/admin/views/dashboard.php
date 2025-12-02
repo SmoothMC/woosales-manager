@@ -4,14 +4,38 @@ $agent_id = absint($_GET['agent_id'] ?? 0);
 $status = sanitize_text_field($_GET['status'] ?? 'approved');
 $date_from = sanitize_text_field($_GET['date_from'] ?? '');
 $date_to = sanitize_text_field($_GET['date_to'] ?? '');
-$list = $this->commissions->list(array('agent_id'=>$agent_id,'status'=>$status,'date_from'=>$date_from,'date_to'=>$date_to,'per_page'=>50,'paged'=>absint($_GET['paged'] ?? 1)));
-$total_amount = $this->commissions->totals(array('agent_id'=>$agent_id,'status'=>$status,'date_from'=>$date_from,'date_to'=>$date_to));
+$month = sanitize_text_field($_GET['month'] ?? date('Y-m'));
+$list = $this->commissions->list(array(
+    'agent_id' => $agent_id,
+    'status'   => $status,
+    'month'    => $month, // ✅ NEU
+    'date_from'=> $date_from,
+    'date_to'  => $date_to,
+    'per_page' => 50,
+    'paged'    => absint($_GET['paged'] ?? 1)
+));
+$total_amount = $this->commissions->totals(array(
+    'agent_id' => $agent_id,
+    'status'   => $status,
+    'month'    => $month // ✅ NEU
+));
 $agents = $this->agents->all_active();
 ?>
 <form method="get">
     <input type="hidden" name="page" value="wsm-sales" />
     <input type="hidden" name="tab" value="dashboard" />
     <p class="search-box">
+        <?php
+        $months = $this->commissions->get_available_months();
+        ?>
+        
+        <select name="month">
+            <?php foreach($months as $m): ?>
+                <option value="<?php echo esc_attr($m); ?>" <?php selected($month, $m); ?>>
+                    <?php echo esc_html($m); ?>
+                </option>
+            <?php endforeach; ?>
+        </select>
         <select name="agent_id">
             <option value="0"><?php esc_html_e('All agents','woo-sales-manager'); ?></option>
             <?php foreach($agents as $a): ?>
