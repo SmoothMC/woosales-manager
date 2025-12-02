@@ -21,8 +21,24 @@ Upload ZIP, activate, then WooCommerce → Sales.
 Set **Update JSON URL** under Settings.
 
 == Changelog ==
-## [1.3.2] – 2025-11-30
+## [1.4.0] – 2025-12-02
+### Added
+- Billing period support via `commission_month` (YYYY-MM) based on order completion date
+- Automatic migration for existing commissions to set correct billing months
+- Admin dashboard month selector for commission reporting
+- Frontend "My Sales" dashboard period filtering based on billing month
 
+### Changed
+- Commission reporting shifted from technical timestamps (`created_at`)
+  to business billing period (`commission_month`)
+- Frontend period navigation now uses billing periods instead of insert dates
+
+### Fixed
+- Incorrect frontend month grouping after commission recalculations
+- Missing SELECT of `commission_month` in agent commission queries
+- Safety fallback added for date handling when billing month is missing
+
+## [1.3.2] – 2025-11-30
 ### Fixed
 - Orders with already assigned agents now correctly sync checkbox state
 - Pending commissions are now generated reliably on manual assignment
