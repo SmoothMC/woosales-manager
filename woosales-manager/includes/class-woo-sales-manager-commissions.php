@@ -167,41 +167,86 @@ class Woo_Sales_Manager_Commissions {
         );
     }
 
-    public function list( $args = array() ){
-        global $wpdb;
-        $a = wp_parse_args($args, array('agent_id'=>0,'status'=>'','month'=>'','date_from'=>'','date_to'=>'','paged'=>1,'per_page'=>50));
-        $where="WHERE 1=1"; $p=array();
-        if($a['agent_id']){ $where.=" AND agent_id=%d"; $p[]=$a['agent_id']; }
-        if($a['status']){ $where.=" AND status=%s"; $p[]=$a['status']; }
-        if( ! empty($a['month']) ){
-            $where .= " AND commission_month = %s";
-            $p[] = $a['month'];
-        }
-        if($a['date_from']){
-            $p[] = date('Y-m', strtotime($a['date_from']));
-            $where .= " AND commission_month >= %s";
-        }
-        if($a['date_to']){
-            $p[] = date('Y-m', strtotime($a['date_to']));
-            $where .= " AND commission_month <= %s";
-        }
-        $offset = (max(1,(int)$a['paged'])-1) * (int)$a['per_page'];
-        $sql = "SELECT * FROM {$this->db->table_commissions} $where ORDER BY id DESC LIMIT %d OFFSET %d";
-        $rows = $wpdb->get_results( $wpdb->prepare($sql, array_merge($p,[(int)$a['per_page'], (int)$offset])) );
-        $total = $wpdb->get_var( $wpdb->prepare("SELECT COUNT(*) FROM {$this->db->table_commissions} $where", $p) );
-        return array('rows'=>$rows,'total'=>$total);
-    }
+		public function list( $args = array() ){
+				global $wpdb;
+		
+				$a = wp_parse_args($args, array(
+						'agent_id'   => 0,
+						'status'     => '',
+						'month'      => '',
+						'month_from' => '',
+						'month_to'   => '',
+						'date_from'  => '',
+						'date_to'    => '',
+						'paged'      => 1,
+						'per_page'   => 50
+				));
+		
+				$where = "WHERE 1=1";
+				$p = array();
+		
+				if ($a['agent_id']) { $where .= " AND agent_id=%d"; $p[] = $a['agent_id']; }
+		
+				// ✅ status leer = "all"
+				if ($a['status']) { $where .= " AND status=%s"; $p[] = $a['status']; }
+		
+				// ✅ Period filter via commission_month (month OR month-range for quarter)
+				if (!empty($a['month'])) {
+						$where .= " AND commission_month = %s";
+						$p[] = $a['month'];
+				} else {
+						if (!empty($a['month_from'])) { $where .= " AND commission_month >= %s"; $p[] = $a['month_from']; }
+						if (!empty($a['month_to']))   { $where .= " AND commission_month <= %s"; $p[] = $a['month_to']; }
+				}
+		
+				/**
+				* Optional: echte Datumsfilter (created_at) — nur nutzen, wenn du sie im UI aktiv lassen willst
+				* Wenn du das NICHT willst, kannst du den Block entfernen.
+				*/
+				if ($a['date_from']) { $where .= " AND created_at >= %s"; $p[] = $a['date_from']; }
+				if ($a['date_to'])   { $where .= " AND created_at <= %s"; $p[] = $a['date_to']; }
+		
+				$offset = (max(1,(int)$a['paged'])-1) * (int)$a['per_page'];
+		
+				$sql = "SELECT * FROM {$this->db->table_commissions} $where
+								ORDER BY id DESC
+								LIMIT %d OFFSET %d";
+		
+				$rows = $wpdb->get_results(
+						$wpdb->prepare($sql, array_merge($p, [(int)$a['per_page'], (int)$offset]))
+				);
+		
+				$total = $wpdb->get_var(
+						$wpdb->prepare("SELECT COUNT(*) FROM {$this->db->table_commissions} $where", $p)
+				);
+		
+				return array('rows'=>$rows,'total'=>$total);
+		}
 
     public function totals( $args = array() ){
         global $wpdb;
-        $a = wp_parse_args($args, array('agent_id'=>0,'status'=>'approved','month'=>'','date_from'=>'','date_to'=>''));
+        $a = wp_parse_args($args, array(
+						'agent_id'=>0,
+						'status'=>'',
+						'month'=>'',
+						'month_from'=>'',
+						'month_to'=>'',
+						'date_from'=>'',
+						'date_to'=>'',
+						'paged'=>1,
+						'per_page'=>50
+				));
         $where="WHERE 1=1"; $p=array();
         if($a['agent_id']){ $where.=" AND agent_id=%d"; $p[]=$a['agent_id']; }
         if($a['status']){ $where.=" AND status=%s"; $p[]=$a['status']; }
-        if( ! empty($a['month']) ){
-            $where .= " AND commission_month = %s";
-            $p[] = $a['month'];
-        }
+        // ✅ Period filter via commission_month
+				if( ! empty($a['month']) ){
+						$where .= " AND commission_month = %s";
+						$p[] = $a['month'];
+				} else {
+						if (!empty($a['month_from'])) { $where .= " AND commission_month >= %s"; $p[] = $a['month_from']; }
+						if (!empty($a['month_to']))   { $where .= " AND commission_month <= %s"; $p[] = $a['month_to']; }
+				}
         if($a['date_from']){ $where.=" AND created_at >= %s"; $p[]=$a['date_from']; }
         if($a['date_to']){ $where.=" AND created_at <= %s"; $p[]=$a['date_to']; }
         return (float)$wpdb->get_var(
@@ -274,19 +319,31 @@ class Woo_Sales_Manager_Commissions {
             wc_get_price_decimals()
         );
     
-        $wpdb->update(
-            $this->db->table_commissions,
-            array(
-                'agent_id'   => absint($_POST['agent_id']),
-                'status'     => sanitize_text_field($_POST['status']),
-                'rate'       => $rate,
-                'amount'     => $amount,
-                'updated_at'=> current_time('mysql'),
-            ),
-            array(
-                'id' => $id
-            )
-        );
+				$new_status = sanitize_text_field($_POST['status']);
+				
+				$data = array(
+						'agent_id'   => absint($_POST['agent_id']),
+						'status'     => $new_status,
+						'rate'       => $rate,
+						'amount'     => $amount,
+						'updated_at' => current_time('mysql'),
+				);
+				
+				// paid_at setzen/entfernen je nach Status
+				if ($new_status === 'paid') {
+						$data['paid_at'] = current_time('mysql');
+				} elseif ($new_status !== 'paid') {
+						// optional: wenn man paid wieder zurücksetzt, paid_at leeren
+						$data['paid_at'] = null;
+				}
+				
+				$wpdb->update(
+						$this->db->table_commissions,
+						$data,
+						array('id' => $id),
+						null,
+						array('%d')
+				);
     
         wp_redirect(admin_url('admin.php?page=wsm-sales&updated=1'));
         exit;

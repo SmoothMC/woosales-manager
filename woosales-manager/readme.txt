@@ -21,6 +21,33 @@ Upload ZIP, activate, then WooCommerce → Sales.
 Set **Update JSON URL** under Settings.
 
 == Changelog ==
+## [1.5.0] – 2026-01-15
+### Added
+- Payout reporting with selectable billing period (month or quarter)
+- Agent filter and status filter (approved / paid / all) in payout view
+- CSV export for payouts with period and status filtering
+- Print-friendly PDF payout report (save as PDF via browser)
+- `paid_at` timestamp column to track actual payout date
+- Admin list column showing payout date when commission is marked as paid
+- Summary feedback in payout view showing:
+  - number of filtered commissions
+  - selected period, agent and status
+  - total payout amount
+
+### Changed
+- Payout actions now operate on billing period (`commission_month`) instead of raw timestamps
+- PDF export sorting:
+  - by payout date when exporting paid commissions
+  - by order date otherwise
+- CSV and PDF exports only display “Paid at” column when exporting paid commissions
+- Commission status updates now automatically maintain `paid_at` timestamp
+
+### Fixed
+- Inconsistent payout totals when filtering by month
+- Export actions previously ignoring selected billing period
+- Missing payout date handling when changing commission status manually
+- Sorting inconsistencies in payout reports
+
 ## [1.4.0] – 2025-12-02
 ### Added
 - Billing period support via `commission_month` (YYYY-MM) based on order completion date

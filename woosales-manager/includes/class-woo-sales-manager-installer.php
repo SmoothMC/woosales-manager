@@ -34,6 +34,7 @@ class Woo_Sales_Manager_Installer {
             currency VARCHAR(10) NOT NULL DEFAULT 'EUR',
             created_at DATETIME NOT NULL,
             updated_at DATETIME NOT NULL,
+						paid_at DATETIME NULL,
             commission_month CHAR(7) NOT NULL,
             UNIQUE KEY uniq_order_agent (order_id, agent_id),
             PRIMARY KEY (id),
@@ -63,26 +64,33 @@ class Woo_Sales_Manager_Installer {
         ));
     }
 
-    public static function upgrade() {
-    
-        global $wpdb;
-    
-        // Agents: user_id
-        $agents = $wpdb->prefix . 'wsm_agents';
-    
-        $has_user_id = $wpdb->get_var("SHOW COLUMNS FROM $agents LIKE 'user_id'");
-        if (!$has_user_id) {
-            $wpdb->query("ALTER TABLE $agents ADD COLUMN user_id BIGINT UNSIGNED NULL AFTER is_active;");
-            $wpdb->query("ALTER TABLE $agents ADD INDEX user_idx (user_id);");
-        }
-    
-        // ✅ Commissions: commission_month
-        $comms = $wpdb->prefix . 'wsm_commissions';
-    
-        $has_month = $wpdb->get_var("SHOW COLUMNS FROM $comms LIKE 'commission_month'");
-        if (!$has_month) {
-            $wpdb->query("ALTER TABLE $comms ADD commission_month CHAR(7) NOT NULL AFTER updated_at;");
-        }
-    }
+		public static function upgrade() {
+		
+				global $wpdb;
+		
+				// Agents: user_id
+				$agents = $wpdb->prefix . 'wsm_agents';
+		
+				$has_user_id = $wpdb->get_var("SHOW COLUMNS FROM $agents LIKE 'user_id'");
+				if (!$has_user_id) {
+						$wpdb->query("ALTER TABLE $agents ADD COLUMN user_id BIGINT UNSIGNED NULL AFTER is_active;");
+						$wpdb->query("ALTER TABLE $agents ADD INDEX user_idx (user_id);");
+				}
+		
+				// ✅ Commissions: commission_month
+				$comms = $wpdb->prefix . 'wsm_commissions';
+		
+				$has_month = $wpdb->get_var("SHOW COLUMNS FROM $comms LIKE 'commission_month'");
+				if (!$has_month) {
+						$wpdb->query("ALTER TABLE $comms ADD commission_month CHAR(7) NOT NULL AFTER updated_at;");
+				}
+		
+				// ✅ Commissions: paid_at
+				$has_paid_at = $wpdb->get_var("SHOW COLUMNS FROM $comms LIKE 'paid_at'");
+				if (!$has_paid_at) {
+						$wpdb->query("ALTER TABLE $comms ADD paid_at DATETIME NULL AFTER commission_month;");
+						$wpdb->query("ALTER TABLE $comms ADD INDEX paid_at (paid_at);");
+				}
+		}
 
 }
