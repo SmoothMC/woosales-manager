@@ -20,7 +20,7 @@ $plugin_data = get_file_data(
     )
 );
 
-define( 'WSM_VERSION', $plugin_data['Version'] );
+define( 'WSM_VERSION', '1.5.2' );
 
 define( 'WSM_PATH', plugin_dir_path( __FILE__ ) );
 define( 'WSM_URL', plugin_dir_url( __FILE__ ) );
