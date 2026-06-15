@@ -13,13 +13,6 @@
 
 if ( ! defined( 'ABSPATH' ) ) exit;
 
-$plugin_data = get_file_data(
-    __FILE__,
-    array(
-        'Version' => 'Version',
-    )
-);
-
 define( 'WSM_VERSION', '1.5.2' );
 
 define( 'WSM_PATH', plugin_dir_path( __FILE__ ) );
