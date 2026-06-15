@@ -288,6 +288,8 @@ class Woo_Sales_Manager_Payouts {
 
         $sum = 0.0;
         foreach ($rows as $r) $sum += (float)$r->amount;
+        
+        $count = count($rows);
 
         $agent_label = 'All agents';
         if ($agent_id) {
@@ -310,7 +312,7 @@ class Woo_Sales_Manager_Payouts {
 
         echo '<button onclick="window.print()">Print / Save as PDF</button>';
         echo '<h1>Payout Report</h1>';
-        echo '<div class="meta">Period: <strong>'.esc_html($label).'</strong> &nbsp;|&nbsp; Agent: <strong>'.esc_html($agent_label).'</strong> &nbsp;|&nbsp; Status: <strong>'.esc_html($status).'</strong> &nbsp;|&nbsp; Total: <strong>'.wp_kses_post(wc_price($sum)).'</strong></div>';
+        echo '<div class="meta">Period: <strong>'.esc_html($label).'</strong> &nbsp;|&nbsp; Agent: <strong>'.esc_html($agent_label).'</strong> &nbsp;|&nbsp; Status: <strong>'.esc_html($status).'</strong> &nbsp;|&nbsp; Sales: <strong>'.esc_html($count).'</strong> &nbsp;|&nbsp; Total: <strong>'.wp_kses_post(wc_price($sum)).'</strong></div>';
 
         echo '<table><thead><tr>
             <th>Month</th><th>Order date</th><th>Order</th><th class="right">Base</th><th class="right">Rate</th><th class="right">Commission</th><th>Status</th>';
