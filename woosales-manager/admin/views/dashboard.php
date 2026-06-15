@@ -10,8 +10,8 @@ if (!in_array($status, ['approved','pending','rejected','paid','all'], true)) {
 }
 
 // period_mode: month|quarter
-$period_mode = sanitize_key($_GET['period_mode'] ?? 'month');
-if (!in_array($period_mode, ['month','quarter'], true)) $period_mode = 'month';
+$period_mode = sanitize_key($_GET['period_mode'] ?? 'quarter');
+if (!in_array($period_mode, ['month','quarter'], true)) $period_mode = 'quarter';
 
 $months = $this->commissions->get_available_months();
 
@@ -78,7 +78,21 @@ $total_amount = $this->commissions->totals([
 
 $agents = $this->agents->all_active();
 ?>
+<?php if (!empty($_GET['bulk_updated'])): ?>
 
+    <div class="notice notice-success">
+
+        <p>
+
+            <?php echo esc_html(absint($_GET['bulk_updated'])); ?>
+
+            <?php esc_html_e('commissions updated.', 'woo-sales-manager'); ?>
+
+        </p>
+
+    </div>
+
+<?php endif; ?>
 <form method="get">
     <input type="hidden" name="page" value="wsm-sales" />
     <input type="hidden" name="tab" value="dashboard" />
@@ -170,11 +184,31 @@ $count = isset($list['total']) ? (int)$list['total'] : (is_array($list['rows']) 
     <?php endif; ?>
 </div>
 
+<form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+    <?php wp_nonce_field('wsm_bulk_update_commissions'); ?>
+    <input type="hidden" name="action" value="wsm_bulk_update_commissions" />
+
+    <p style="margin-top:16px;">
+        <select name="bulk_status">
+            <option value=""><?php esc_html_e('Change status to…','woo-sales-manager'); ?></option>
+            <option value="pending"><?php esc_html_e('Pending','woo-sales-manager'); ?></option>
+            <option value="approved"><?php esc_html_e('Approved','woo-sales-manager'); ?></option>
+            <option value="rejected"><?php esc_html_e('Rejected','woo-sales-manager'); ?></option>
+            <option value="paid"><?php esc_html_e('Paid','woo-sales-manager'); ?></option>
+        </select>
+
+        <button class="button button-secondary">
+            <?php esc_html_e('Apply','woo-sales-manager'); ?>
+        </button>
+    </p>
+
 <table class="widefat striped">
     <thead>
         <tr>
+            <th><input type="checkbox" id="wsm-check-all"></th>
             <th><?php esc_html_e('ID','woo-sales-manager'); ?></th>
             <th><?php esc_html_e('Order','woo-sales-manager'); ?></th>
+            <th><?php esc_html_e('Order Status','woo-sales-manager'); ?></th>
             <th><?php esc_html_e('Agent','woo-sales-manager'); ?></th>
             <th><?php esc_html_e('Base','woo-sales-manager'); ?></th>
             <th><?php esc_html_e('Rate','woo-sales-manager'); ?></th>
@@ -188,6 +222,9 @@ $count = isset($list['total']) ? (int)$list['total'] : (is_array($list['rows']) 
         <?php foreach($list['rows'] as $r): $agent = $this->agents->get($r->agent_id); ?>
             <tr>
                 <td>
+                    <input type="checkbox" name="commission_ids[]" value="<?php echo esc_attr($r->id); ?>">
+                </td>
+                <td>
                   <a href="<?php echo esc_url(
                       admin_url('admin.php?page=wsm-sales&commission_id=' . $r->id)
                   ); ?>">
@@ -195,6 +232,7 @@ $count = isset($list['total']) ? (int)$list['total'] : (is_array($list['rows']) 
                   </a>
                 </td>
                 <td><a href="<?php echo esc_url(get_edit_post_link($r->order_id)); ?>">#<?php echo esc_html($r->order_id); ?></a></td>
+                <td><?php echo esc_html( str_replace('wc-', '', $r->wc_order_status ?? '') ); ?></td>
                 <td><?php echo esc_html($agent ? $agent->name : ('#'.$r->agent_id)); ?></td>
                 <td><?php echo wc_price( $r->taxable_base ); ?></td>
                 <td><?php echo esc_html( ($r->rate*100) . '%' ); ?></td>
@@ -206,3 +244,26 @@ $count = isset($list['total']) ? (int)$list['total'] : (is_array($list['rows']) 
         <?php endforeach; ?>
     </tbody>
 </table>
+</form>
+
+<script>
+
+document.addEventListener('DOMContentLoaded', function(){
+
+    const checkAll = document.getElementById('wsm-check-all');
+
+    if (!checkAll) return;
+
+    checkAll.addEventListener('change', function(){
+
+        document.querySelectorAll('input[name="commission_ids[]"]').forEach(function(cb){
+
+            cb.checked = checkAll.checked;
+
+        });
+
+    });
+
+});
+
+</script>

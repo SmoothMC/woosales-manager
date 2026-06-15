@@ -23,6 +23,7 @@ class Woo_Sales_Manager_Commissions {
         
         // Edit commissions
         add_action('admin_post_wsm_update_commission', [$this,'handle_update']);
+        add_action('admin_post_wsm_bulk_update_commissions', [$this,'handle_bulk_update']);
         
         // ✅ Run migration once
         add_action('init', [$this, 'migrate_commission_months'], 5);
@@ -167,61 +168,86 @@ class Woo_Sales_Manager_Commissions {
         );
     }
 
-		public function list( $args = array() ){
-				global $wpdb;
-		
-				$a = wp_parse_args($args, array(
-						'agent_id'   => 0,
-						'status'     => '',
-						'month'      => '',
-						'month_from' => '',
-						'month_to'   => '',
-						'date_from'  => '',
-						'date_to'    => '',
-						'paged'      => 1,
-						'per_page'   => 50
-				));
-		
-				$where = "WHERE 1=1";
-				$p = array();
-		
-				if ($a['agent_id']) { $where .= " AND agent_id=%d"; $p[] = $a['agent_id']; }
-		
-				// ✅ status leer = "all"
-				if ($a['status']) { $where .= " AND status=%s"; $p[] = $a['status']; }
-		
-				// ✅ Period filter via commission_month (month OR month-range for quarter)
-				if (!empty($a['month'])) {
-						$where .= " AND commission_month = %s";
-						$p[] = $a['month'];
-				} else {
-						if (!empty($a['month_from'])) { $where .= " AND commission_month >= %s"; $p[] = $a['month_from']; }
-						if (!empty($a['month_to']))   { $where .= " AND commission_month <= %s"; $p[] = $a['month_to']; }
-				}
-		
-				/**
-				* Optional: echte Datumsfilter (created_at) — nur nutzen, wenn du sie im UI aktiv lassen willst
-				* Wenn du das NICHT willst, kannst du den Block entfernen.
-				*/
-				if ($a['date_from']) { $where .= " AND created_at >= %s"; $p[] = $a['date_from']; }
-				if ($a['date_to'])   { $where .= " AND created_at <= %s"; $p[] = $a['date_to']; }
-		
-				$offset = (max(1,(int)$a['paged'])-1) * (int)$a['per_page'];
-		
-				$sql = "SELECT * FROM {$this->db->table_commissions} $where
-								ORDER BY id DESC
-								LIMIT %d OFFSET %d";
-		
-				$rows = $wpdb->get_results(
-						$wpdb->prepare($sql, array_merge($p, [(int)$a['per_page'], (int)$offset]))
-				);
-		
-				$total = $wpdb->get_var(
-						$wpdb->prepare("SELECT COUNT(*) FROM {$this->db->table_commissions} $where", $p)
-				);
-		
-				return array('rows'=>$rows,'total'=>$total);
-		}
+    public function list( $args = array() ){
+        global $wpdb;
+    
+        $a = wp_parse_args($args, array(
+            'agent_id'   => 0,
+            'status'     => '',
+            'month'      => '',
+            'month_from' => '',
+            'month_to'   => '',
+            'date_from'  => '',
+            'date_to'    => '',
+            'paged'      => 1,
+            'per_page'   => 50
+        ));
+    
+        $where = "WHERE 1=1";
+        $p = array();
+    
+        if ($a['agent_id']) {
+            $where .= " AND c.agent_id=%d";
+            $p[] = $a['agent_id'];
+        }
+    
+        if ($a['status']) {
+            $where .= " AND c.status=%s";
+            $p[] = $a['status'];
+        }
+    
+        if (!empty($a['month'])) {
+            $where .= " AND c.commission_month = %s";
+            $p[] = $a['month'];
+        } else {
+            if (!empty($a['month_from'])) {
+                $where .= " AND c.commission_month >= %s";
+                $p[] = $a['month_from'];
+            }
+    
+            if (!empty($a['month_to'])) {
+                $where .= " AND c.commission_month <= %s";
+                $p[] = $a['month_to'];
+            }
+        }
+    
+        if ($a['date_from']) {
+            $where .= " AND c.created_at >= %s";
+            $p[] = $a['date_from'];
+        }
+    
+        if ($a['date_to']) {
+            $where .= " AND c.created_at <= %s";
+            $p[] = $a['date_to'];
+        }
+    
+        $offset = (max(1, (int)$a['paged']) - 1) * (int)$a['per_page'];
+    
+        $sql = "SELECT 
+                    c.*,
+                    o.post_status AS wc_order_status,
+                    o.post_date AS order_date
+                FROM {$this->db->table_commissions} c
+                LEFT JOIN {$wpdb->posts} o ON o.ID = c.order_id
+                $where
+                ORDER BY c.id DESC
+                LIMIT %d OFFSET %d";
+    
+        $rows = $wpdb->get_results(
+            $wpdb->prepare($sql, array_merge($p, [(int)$a['per_page'], (int)$offset]))
+        );
+    
+        $count_sql = "SELECT COUNT(*)
+                    FROM {$this->db->table_commissions} c
+                    LEFT JOIN {$wpdb->posts} o ON o.ID = c.order_id
+                    $where";
+    
+        $total = !empty($p)
+            ? $wpdb->get_var($wpdb->prepare($count_sql, $p))
+            : $wpdb->get_var($count_sql);
+    
+        return array('rows' => $rows, 'total' => $total);
+    }
 
     public function totals( $args = array() ){
         global $wpdb;
@@ -429,6 +455,58 @@ class Woo_Sales_Manager_Commissions {
                 )
             );
         }
+    }
+    public function handle_bulk_update(){
+    
+        if (
+            ! current_user_can('manage_woocommerce') ||
+            ! check_admin_referer('wsm_bulk_update_commissions')
+        ) {
+            wp_die('Not allowed');
+        }
+    
+        $ids = array_map('absint', $_POST['commission_ids'] ?? []);
+        $new_status = sanitize_key($_POST['bulk_status'] ?? '');
+    
+        if (
+            empty($ids) ||
+            ! in_array($new_status, ['pending','approved','rejected','paid'], true)
+        ) {
+            wp_redirect(wp_get_referer() ?: admin_url('admin.php?page=wsm-sales&tab=dashboard'));
+            exit;
+        }
+    
+        global $wpdb;
+    
+        $data = array(
+            'status'     => $new_status,
+            'updated_at' => current_time('mysql'),
+        );
+    
+        if ($new_status === 'paid') {
+            $data['paid_at'] = current_time('mysql');
+        } else {
+            $data['paid_at'] = null;
+        }
+    
+        foreach ($ids as $id) {
+            $wpdb->update(
+                $this->db->table_commissions,
+                $data,
+                array('id' => $id),
+                null,
+                array('%d')
+            );
+        }
+    
+        wp_redirect(
+            add_query_arg(
+                'bulk_updated',
+                count($ids),
+                wp_get_referer() ?: admin_url('admin.php?page=wsm-sales&tab=dashboard')
+            )
+        );
+        exit;
     }
 }
 ?>

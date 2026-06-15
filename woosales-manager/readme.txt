@@ -21,6 +21,22 @@ Upload ZIP, activate, then WooCommerce → Sales.
 Set **Update JSON URL** under Settings.
 
 == Changelog ==
+## [1.5.1] – 2026-01-15
+### Added
+- Order status column in admin dashboard commission table
+- Bulk commission status updates in admin dashboard
+- Select-all checkbox for bulk editing commissions
+- Bulk update success notice showing number of updated commissions
+
+### Changed
+- Dashboard default period filter changed from month to quarter
+- Commission dashboard queries now include related WooCommerce order status
+- Bulk status changes now also update `paid_at` when setting commissions to paid
+
+### Fixed
+- Missing order context in commission overview
+- Manual multi-commission status updates requiring single-edit workflow
+
 ## [1.5.0] – 2026-01-15
 ### Added
 - Payout reporting with selectable billing period (month or quarter)
