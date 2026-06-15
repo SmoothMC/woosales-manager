@@ -2,7 +2,7 @@
 Contributors: SmoothMC
 Tags: woocommerce, commission, sales, agents
 Requires at least: 6.0
-Tested up to: 6.8.3
+Tested up to: 7.0.0
 Requires PHP: 8.0
 Stable tag: 1.0.1
 License: GPLv2 or later

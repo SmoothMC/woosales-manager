@@ -16,6 +16,9 @@ class Woo_Sales_Manager_Commissions {
 
         // Approve commissions when completed
         add_action('woocommerce_order_status_completed', array($this, 'approve_for_order'));
+        
+        // Fallback: falls die Commission erst nach Abschluss angelegt wird
+        add_action('woocommerce_order_status_changed', array($this, 'sync_order_status'), 20, 4);
 
         // Reject when cancelled or refunded
         add_action('woocommerce_order_status_cancelled', array($this, 'reject_for_order'));
@@ -151,6 +154,46 @@ class Woo_Sales_Manager_Commissions {
                 current_time('mysql'), $order_id
             )
         );
+    }
+    
+    /**
+    * Synchronisiert Commission-Status mit dem tatsächlichen Order-Status.
+    */
+    public function sync_order_status( $order_id, $old_status, $new_status, $order ) {
+    
+        global $wpdb;
+    
+        switch ( $new_status ) {
+    
+            case 'completed':
+                $wpdb->query(
+                    $wpdb->prepare(
+                        "UPDATE {$this->db->table_commissions}
+                        SET status='approved',
+                            updated_at=%s
+                        WHERE order_id=%d
+                        AND status='pending'",
+                        current_time('mysql'),
+                        $order_id
+                    )
+                );
+                break;
+    
+            case 'cancelled':
+            case 'refunded':
+                $wpdb->query(
+                    $wpdb->prepare(
+                        "UPDATE {$this->db->table_commissions}
+                        SET status='rejected',
+                            updated_at=%s
+                        WHERE order_id=%d
+                        AND status IN ('pending','approved')",
+                        current_time('mysql'),
+                        $order_id
+                    )
+                );
+                break;
+        }
     }
 
     /**
@@ -396,6 +439,15 @@ class Woo_Sales_Manager_Commissions {
         $base     = $this->order_base_amount($order);
         $total    = (float)$order->get_total();
     
+        // ✅ Status abhängig vom aktuellen Order-Status setzen
+        if ( $order->has_status('completed') ) {
+            $commission_status = 'approved';
+        } elseif ( $order->has_status(['cancelled', 'refunded']) ) {
+            $commission_status = 'rejected';
+        } else {
+            $commission_status = 'pending';
+        }
+    
         // ✅ 3. Neue Commission-Einträge bauen
         foreach($agent_ids as $agent_id){
     
@@ -407,17 +459,17 @@ class Woo_Sales_Manager_Commissions {
             $wpdb->insert(
                 $this->db->table_commissions,
                 array(
-                    'order_id'     => $order_id,
-                    'agent_id'     => $a->id,
-                    'order_total' => $total,
-                    'taxable_base'=> $base,
-                    'rate'         => $a->rate,
-                    'amount'       => $amount,
-                    'status'       => 'pending',
-                    'currency'     => $currency,
-                    'commission_month' => $this->get_commission_month($order),
-                    'created_at'  => current_time('mysql'),
-                    'updated_at'  => current_time('mysql'),
+                    'order_id'          => $order_id,
+                    'agent_id'          => $a->id,
+                    'order_total'       => $total,
+                    'taxable_base'      => $base,
+                    'rate'              => $a->rate,
+                    'amount'            => $amount,
+                    'status'            => $commission_status,
+                    'currency'          => $currency,
+                    'commission_month'  => $this->get_commission_month($order),
+                    'created_at'        => current_time('mysql'),
+                    'updated_at'        => current_time('mysql'),
                 )
             );
         }

@@ -21,8 +21,8 @@ class Woo_Sales_Manager_Payouts {
 
     private function get_period_from_request( array $src ) : array {
 
-        $mode = sanitize_key($src['mode'] ?? 'month');
-        if (!in_array($mode, ['month','quarter'], true)) $mode = 'month';
+        $mode = sanitize_key($src['mode'] ?? 'quarter');
+        if (!in_array($mode, ['month','quarter'], true)) $mode = 'quarter';
 
         $month = sanitize_text_field($src['month'] ?? '');
         $quarter = sanitize_text_field($src['quarter'] ?? '');

@@ -4,8 +4,8 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 $agents   = $this->agents->all_active();
 $agent_id = absint($_GET['agent_id'] ?? 0);
 
-$mode = sanitize_key($_GET['mode'] ?? 'month');
-if (!in_array($mode, ['month','quarter'], true)) $mode = 'month';
+$mode = sanitize_key($_GET['mode'] ?? 'quarter');
+if (!in_array($mode, ['month','quarter'], true)) $mode = 'quarter';
 
 $months = $this->commissions->get_available_months();
 $month  = sanitize_text_field($_GET['month'] ?? date('Y-m'));
@@ -74,6 +74,12 @@ if ($agent_id) {
 }
 ?>
 <h2><?php esc_html_e('Payouts','woo-sales-manager'); ?></h2>
+
+<?php if (!empty($_GET['paid'])): ?>
+    <div class="notice notice-success" style="margin:12px 0;">
+        <p><?php esc_html_e('Filtered approved commissions have been marked as paid.', 'woo-sales-manager'); ?></p>
+    </div>
+<?php endif; ?>
 
 <form method="get" style="margin-bottom:1em;display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">
     <input type="hidden" name="page" value="wsm-sales" />
@@ -165,4 +171,31 @@ if ($agent_id) {
         — <?php esc_html_e('Total', 'woo-sales-manager'); ?>: <strong><?php echo wp_kses_post(wc_price($total_amount)); ?></strong>
     </p>
 </div>
+
+<form method="post"
+      action="<?php echo esc_url(admin_url('admin-post.php')); ?>"
+      onsubmit="return confirm('<?php echo esc_js(__('Mark all filtered approved commissions as paid?', 'woo-sales-manager')); ?>');"
+      style="margin-top:12px;">
+
+    <?php wp_nonce_field('wsm_mark_paid'); ?>
+
+    <input type="hidden" name="action" value="wsm_mark_paid" />
+    <input type="hidden" name="agent_id" value="<?php echo esc_attr($agent_id); ?>" />
+    <input type="hidden" name="mode" value="<?php echo esc_attr($mode); ?>" />
+
+    <?php if ($mode === 'month'): ?>
+        <input type="hidden" name="month" value="<?php echo esc_attr($month); ?>" />
+    <?php else: ?>
+        <input type="hidden" name="quarter" value="<?php echo esc_attr($quarter); ?>" />
+    <?php endif; ?>
+
+    <label style="display:block;margin-bottom:8px;">
+        <input type="checkbox" required>
+        <?php esc_html_e('I confirm that all filtered approved commissions should be marked as paid.', 'woo-sales-manager'); ?>
+    </label>
+
+    <button class="button button-primary">
+        <?php esc_html_e('Mark filtered approved commissions as Paid', 'woo-sales-manager'); ?>
+    </button>
+</form>
 
