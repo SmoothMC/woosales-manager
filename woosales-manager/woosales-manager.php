@@ -2,7 +2,7 @@
 /**
  * Plugin Name: WooSales Manager
  * Description: Global sales commissions for WooCommerce, with JSON-based self-updater.
- * Version: 1.5.1
+ * Version: 1.5.2
  * Author: Mikka | zzzooo Studio
  * Text Domain: woo-sales-manager
  * Domain Path: /languages
@@ -13,7 +13,15 @@
 
 if ( ! defined( 'ABSPATH' ) ) exit;
 
-define( 'WSM_VERSION', '1.5.1' );
+$plugin_data = get_file_data(
+    __FILE__,
+    array(
+        'Version' => 'Version',
+    )
+);
+
+define( 'WSM_VERSION', $plugin_data['Version'] );
+
 define( 'WSM_PATH', plugin_dir_path( __FILE__ ) );
 define( 'WSM_URL', plugin_dir_url( __FILE__ ) );
 define( 'WSM_BASENAME', plugin_basename( __FILE__ ) );

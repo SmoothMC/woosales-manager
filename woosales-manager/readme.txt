@@ -21,6 +21,33 @@ Upload ZIP, activate, then WooCommerce → Sales.
 Set **Update JSON URL** under Settings.
 
 == Changelog ==
+## [1.5.2] – 2026-06-15
+### Added
+- Payouts: "Mark filtered approved commissions as paid" action
+- Confirmation checkbox before bulk marking commissions as paid
+- Success notice after payout processing
+- Quarter-based payout view as the default period
+- Payout summary showing filtered commission count and total amount
+- PDF payout exports now display the number of included sales
+- PDF exports now include the WooCommerce order date
+- Optional `paid_at` column in CSV and PDF exports when exporting paid commissions
+
+### Changed
+- Payout exports (CSV/PDF) now respect the selected payout filters
+- Manual commission assignments now inherit the current WooCommerce order status
+- Quarter view is now the default in the payout section
+- PDF exports are sorted more meaningfully:
+  - Paid exports by payout date (`paid_at`)
+  - Other exports by WooCommerce order date
+- CSV exports now generate dynamic columns depending on the selected status
+
+### Fixed
+- Commissions created after an order was already completed are now automatically approved
+- Manual assignments no longer leave completed orders with pending commissions
+- Cancelled and refunded orders now correctly create rejected commissions during manual assignment
+- Export and payout actions now remain consistent with the selected payout period and filters
+- `paid_at` is only displayed in exports when relevant
+
 ## [1.5.1] – 2026-01-15
 ### Added
 - Order status column in admin dashboard commission table
